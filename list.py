@@ -77,8 +77,8 @@ def fetch_friday_end_price(symbol):
 def get_historical_price(symbol, date):
     # Convert the date to 12:00 AM IST or 12:30 AM IST
     ist = pytz.timezone('Asia/Kolkata')
-    target_time_12am = ist.localize(datetime(date.year, date.month, date.day, 0, 0, 0)).astimezone(pytz.utc)
-    target_time_1230am = ist.localize(datetime(date.year, date.month, date.day, 0, 30, 0)).astimezone(pytz.utc)
+    target_time_12am = ist.localize(datetime(date.year, date.month, date.day, 1, 0, 0)).astimezone(pytz.utc)
+    target_time_1230am = ist.localize(datetime(date.year, date.month, date.day, 1, 30, 0)).astimezone(pytz.utc)
 
     # Attempt to fetch historical price at 12:00 AM IST
     rates_12am = mt5.copy_rates_range(symbol, TIMEFRAME, target_time_12am, target_time_12am + timedelta(minutes=1))
