@@ -1,44 +1,86 @@
 import MetaTrader5 as mt5
-from notifications import send_telegram_message
+from notifications import send_discord_message
 
-def place_trade(symbol, order_type, volume, price, slippage, comment, stop_loss=None, take_profit=None):
+def place_trade(symbol, order_type, volume, price=None, slippage=20, stop_loss=None, take_profit=None):
     """
     Places a trade order in MetaTrader 5.
 
     :param symbol: Trading symbol (e.g., 'EURUSD')
-    :param order_type: Type of order (mt5.ORDER_BUY or mt5.ORDER_SELL)
+    :param order_type: Type of order (mt5.ORDER_TYPE_BUY or mt5.ORDER_TYPE_SELL)
     :param volume: Volume of the trade (in lots)
-    :param price: Price at which to place the order
+    :param price: Price at which to place the order (for market orders, use current price)
     :param slippage: Allowed slippage (in points)
     :param comment: Comment for the order
     :param stop_loss: Optional stop loss price
     :param take_profit: Optional take profit price
     :return: Order result or error message
     """
-    # Create an order request
+    # Ensure symbol is selected
+    if not mt5.symbol_select(symbol, True):
+        error_message = f"Failed to select {symbol} for trading."
+        print(error_message)
+        return error_message
+
+    # Get symbol info
+    symbol_info = mt5.symbol_info(symbol)
+    if symbol_info is None:
+        error_message = f"Symbol {symbol} not found, cannot trade."
+        print(error_message)
+        return error_message
+
+    # If the symbol is unavailable for trading
+    if not symbol_info.visible:
+        if not mt5.symbol_select(symbol, True):
+            error_message = f"Symbol {symbol} is not visible, could not select."
+            print(error_message)
+            return error_message
+
+    # Determine price if not provided
+    if price is None or price == 0:
+        if order_type == mt5.ORDER_TYPE_BUY:
+            price = mt5.symbol_info_tick(symbol).ask
+        else:
+            price = mt5.symbol_info_tick(symbol).bid
+
+    # Prepare the order request
     order_request = {
-        "action": mt5.ORDER_BUY if order_type == mt5.ORDER_BUY else mt5.ORDER_SELL,
+        "action": mt5.TRADE_ACTION_DEAL,  # Correct action for market order
         "symbol": symbol,
         "volume": volume,
+        "type": order_type,  # Correct order type
         "price": price,
-        "slippage": slippage,
-        "type": mt5.ORDER_BUY if order_type == mt5.ORDER_BUY else mt5.ORDER_SELL,
-        "comment": comment,
-        "stop_loss": stop_loss,
-        "take_profit": take_profit,
+        "deviation": slippage,  # Correct field name
         "magic": 0,
-        "type_time": mt5.ORDER_TIME_GTC,  # Good-Til-Canceled
-        "type_filling": mt5.ORDER_FILLING_FOK,  # Fill-Or-Kill
+        "comment": "Raven Algo Trade",
+        "type_time": mt5.ORDER_TIME_GTC,
+        "type_filling": mt5.ORDER_FILLING_FOK,
     }
+
+    # Include stop_loss and take_profit if provided
+    if stop_loss is not None:
+        order_request['sl'] = stop_loss
+    if take_profit is not None:
+        order_request['tp'] = take_profit
 
     # Send the order
     result = mt5.order_send(order_request)
 
     # Check if the order was placed successfully
-    if result.retcode != mt5.TRADE_RETCODE_DONE:
-        return "Order failed, retcode={}".format(result.retcode)
+    if result is None:
+        # If result is None, retrieve the last error
+        error_code, error_message = mt5.last_error()
+        error_msg = f"Order send failed, error code: {error_code}, message: {error_message}"
+        print(error_msg)
+        return error_msg
 
-    return "Order placed successfully, order ticket={}".format(result.order)
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        error_msg = f"Order failed, retcode={result.retcode}, comment={result.comment}"
+        print(error_msg)
+        return error_msg
+
+    success_msg = f"Order placed successfully, order ticket={result.order}"
+    print(success_msg)
+    return success_msg
 
 
 

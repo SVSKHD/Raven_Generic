@@ -1,5 +1,3 @@
-# db_operations.py
-
 from pymongo import MongoClient
 import pytz
 import pandas as pd
@@ -13,16 +11,16 @@ ist = pytz.timezone('Asia/Kolkata')
 
 
 # Function to save or update threshold data in MongoDB
-async def save_or_update_threshold_in_mongo(symbol, start_price, current_price, previous_threshold, pips_from_start,
-                                            direction, thresholds_list, timestamp, start_price_time):
+def save_or_update_threshold_in_mongo(symbol, start_price, current_price, previous_threshold, pips_from_start,
+                                      direction, thresholds_list, timestamp, start_price_time):
     collection_name = "pip_check2"
     pip_check_collection = db[collection_name]
 
     # Ensure the timestamp and start_price_time are timezone-aware
     if timestamp.tzinfo is None:
-        timestamp = timestamp.tz_localize('UTC')  # Localize to UTC if not already localized
+        timestamp = timestamp.replace(tzinfo=pytz.utc)  # Localize to UTC if not already localized
     if start_price_time.tzinfo is None:
-        start_price_time = start_price_time.tz_localize('UTC')  # Localize to UTC if not already localized
+        start_price_time = start_price_time.replace(tzinfo=pytz.utc)  # Localize to UTC if not already localized
 
     # Convert to IST for display and storage purposes
     current_date_ist = timestamp.astimezone(ist).strftime('%Y-%m-%d %H:%M:%S')
@@ -64,6 +62,7 @@ async def save_or_update_threshold_in_mongo(symbol, start_price, current_price, 
         error_message = f"Failed to save/update document for {symbol} on {current_date_ist}: {str(e)}"
         print(error_message)
         send_discord_message(error_message)
+
 
 
 # Function to check if data already exists in MongoDB
