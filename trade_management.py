@@ -131,3 +131,61 @@ def close_all_trades():
             print(f"Failed to close trade {ticket}, error code: {result.retcode}")
         else:
             print(f"Successfully closed trade {ticket}.")
+
+def close_trades_by_symbol(symbol):
+    # Ensure MT5 is initialized
+    if not mt5.initialize():
+        print("Failed to initialize MT5, error code:", mt5.last_error())
+        return
+
+    # Retrieve open positions for the specified symbol
+    open_positions = mt5.positions_get(symbol=symbol)
+
+    if open_positions is None or len(open_positions) == 0:
+        print(f"No open positions for {symbol}.")
+        return
+
+    # Loop through each open position and close it
+    for position in open_positions:
+        ticket = position.ticket
+        lot = position.volume
+
+        # Determine the type of trade (buy or sell) to create the opposite order
+        if position.type == mt5.ORDER_TYPE_BUY:
+            trade_type = mt5.ORDER_TYPE_SELL
+        elif position.type == mt5.ORDER_TYPE_SELL:
+            trade_type = mt5.ORDER_TYPE_BUY
+        else:
+            print(f"Unknown position type for ticket {ticket}.")
+            continue
+
+        # Get current price for closing
+        symbol_info = mt5.symbol_info(symbol)
+        if symbol_info is None:
+            print(f"Symbol {symbol} not found.")
+            continue
+
+        price = symbol_info.bid if trade_type == mt5.ORDER_TYPE_SELL else symbol_info.ask
+
+        # Create close request
+        close_request = {
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": lot,
+            "type": trade_type,
+            "position": ticket,
+            "price": price,
+            "deviation": 20,
+            "magic": 123456,  # Your unique identifier for trades
+            "comment": "Closing trade by script",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_FOK,
+        }
+
+        # Send close order
+        result = mt5.order_send(close_request)
+
+        if result.retcode != mt5.TRADE_RETCODE_DONE:
+            print(f"Failed to close trade {ticket} for {symbol}, error code: {result.retcode}")
+        else:
+            print(f"Successfully closed trade {ticket} for {symbol}.")
