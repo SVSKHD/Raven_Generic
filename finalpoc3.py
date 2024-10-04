@@ -2,7 +2,7 @@ import MetaTrader5 as mt5
 from datetime import datetime, timedelta
 import pytz
 import time
-from trade_management import place_trade, close_all_trades  # Import your trade management functions
+from trade_management import place_trade, close_trades_by_symbol  # Import your trade management functions
 from db import save_or_update_threshold_in_mongo, check_data_exists_in_mongo  # Import DB functions
 
 def initialize_mt5():
@@ -50,6 +50,7 @@ def get_start_prices(symbols, broker_timezone, ist_timezone):
             start_prices[symbol] = {
                 'start_price': result['start_price'],
                 'pip_difference': sym['pip_difference'],
+                'close_trade_at': sym['close_trade_at'],
                 'date': result['date'],
                 'time': result['time']
             }
@@ -149,15 +150,14 @@ def main():
     ist_timezone = pytz.timezone("Asia/Kolkata")     # IST timezone
     broker_timezone = pytz.timezone('Etc/GMT-3')     # Broker's server time zone (UTC+3)
 
-    # Define symbols list, including BTCUSD with a pip difference of 1 for testing
+    # Define symbols list with 'close_trade_at' key
     symbols = [
-        {"symbol": 'EURUSD', "pip_difference": 15},
-        {"symbol": 'GBPUSD', "pip_difference": 15},
-        {"symbol": 'USDJPY', "pip_difference": 10},
-        {"symbol": 'EURJPY', "pip_difference": 10},
-        {"symbol": 'XAUUSD', "pip_difference": 150},  # Adjusted for pip size
-        {"symbol": 'XAGUSD', "pip_difference": 15},
-        {"symbol": 'BTCUSD', "pip_difference": 1}     # Added BTCUSD for testing
+        {"symbol": 'EURUSD', "pip_difference": 15, "close_trade_at": 5},
+        {"symbol": 'GBPUSD', "pip_difference": 15, "close_trade_at": 5},
+        {"symbol": 'USDJPY', "pip_difference": 10, "close_trade_at": 5},
+        {"symbol": 'EURJPY', "pip_difference": 10, "close_trade_at": 5},
+        {"symbol": 'XAUUSD', "pip_difference": 150, "close_trade_at": 50},  # Adjusted for pip size
+        {"symbol": 'XAGUSD', "pip_difference": 15, "close_trade_at": 5},
     ]
 
     # Initialize start prices
@@ -209,6 +209,9 @@ def main():
 
             for sym in symbols:
                 symbol = sym['symbol']
+                pip_diff_threshold = sym['pip_difference']
+                close_trade_at = sym['close_trade_at']
+
                 if not select_symbol(symbol):
                     continue
                 tick = mt5.symbol_info_tick(symbol)
@@ -220,7 +223,6 @@ def main():
                 if start_price_info is None:
                     continue
                 start_price = start_price_info['start_price']
-                pip_diff_threshold = start_price_info['pip_difference']
                 pip_difference = calculate_pip_difference(symbol, latest_price, start_price)
                 direction = 'up' if pip_difference > 0 else 'down'
 
@@ -238,7 +240,9 @@ def main():
                         print(f"Symbol {symbol} has moved {direction} by {abs_pip_difference:.1f} pips from the start price. Threshold price: {latest_price}")
                         # Place trade on first threshold
                         order_type = mt5.ORDER_TYPE_BUY if direction == 'up' else mt5.ORDER_TYPE_SELL
-                        volume = 0.01  # Adjust volume as needed, smaller volume for BTCUSD
+                        volume = 0.01  # Adjust volume as needed
+                        if symbol == 'BTCUSD':
+                            volume = 0.001  # Example smaller volume for BTCUSD
                         comment = f"Trade opened by script on {direction} movement"
 
                         trade_result = place_trade(symbol, order_type, volume, slippage=20)
@@ -254,18 +258,18 @@ def main():
                         save_or_update_threshold_in_mongo(symbol, start_price, latest_price, previous_threshold,
                                                           pips_from_start, direction, thresholds_list, timestamp, start_price_time)
                     else:
-                        # Check for additional 5 pip movement after first threshold
+                        # Check for additional movement after first threshold
                         last_threshold_price = threshold_symbols[symbol]['threshold_price']
                         additional_pip_difference = calculate_pip_difference(symbol, latest_price, last_threshold_price)
                         abs_additional_pip_difference = abs(additional_pip_difference)
-                        if abs_additional_pip_difference >= 5:
+                        if abs_additional_pip_difference >= close_trade_at:
                             print(f"Symbol {symbol} has moved an additional {abs_additional_pip_difference:.1f} pips {direction} from the threshold price. New threshold price: {latest_price}")
                             # Update the threshold price
                             threshold_symbols[symbol]['threshold_price'] = latest_price
                             threshold_symbols[symbol]['threshold_time'] = datetime.now()
                             threshold_symbols[symbol]['thresholds_list'].append(latest_price)
-                            # Close all trades after additional 5 pip movement
-                            close_all_trades()
+                            # Close all trades for this symbol after additional movement
+                            close_trades_by_symbol(symbol)
 
                             # Log the threshold crossing
                             previous_threshold = last_threshold_price

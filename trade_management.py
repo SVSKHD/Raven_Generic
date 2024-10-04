@@ -1,19 +1,10 @@
 import MetaTrader5 as mt5
 from notifications import send_discord_message
 
+
 def place_trade(symbol, order_type, volume, price=None, slippage=20, stop_loss=None, take_profit=None):
     """
     Places a trade order in MetaTrader 5.
-
-    :param symbol: Trading symbol (e.g., 'EURUSD')
-    :param order_type: Type of order (mt5.ORDER_TYPE_BUY or mt5.ORDER_TYPE_SELL)
-    :param volume: Volume of the trade (in lots)
-    :param price: Price at which to place the order (for market orders, use current price)
-    :param slippage: Allowed slippage (in points)
-    :param comment: Comment for the order
-    :param stop_loss: Optional stop loss price
-    :param take_profit: Optional take profit price
-    :return: Order result or error message
     """
     # Ensure symbol is selected
     if not mt5.symbol_select(symbol, True):
@@ -83,7 +74,6 @@ def place_trade(symbol, order_type, volume, price=None, slippage=20, stop_loss=N
     return success_msg
 
 
-
 def close_all_trades():
     # Initialize connection to MetaTrader 5
     if not mt5.initialize():
@@ -131,6 +121,7 @@ def close_all_trades():
             print(f"Failed to close trade {ticket}, error code: {result.retcode}")
         else:
             print(f"Successfully closed trade {ticket}.")
+
 
 def close_trades_by_symbol(symbol):
     # Ensure MT5 is initialized
