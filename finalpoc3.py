@@ -5,6 +5,7 @@ import time
 from trade_management import place_trade, close_trades_by_symbol  # Import your trade management functions
 from db import save_or_update_threshold_in_mongo, check_data_exists_in_mongo  # Import DB functions
 
+
 def initialize_mt5():
     # Initialize the MT5 platform
     if not mt5.initialize():
@@ -12,12 +13,14 @@ def initialize_mt5():
         return False
     return True
 
+
 def select_symbol(symbol):
     # Select the symbol
     if not mt5.symbol_select(symbol, True):
         print(f"Failed to select {symbol}")
         return False
     return True
+
 
 def get_last_available_price(symbol, desired_time_broker, broker_timezone, price_type='close'):
     """
@@ -37,6 +40,7 @@ def get_last_available_price(symbol, desired_time_broker, broker_timezone, price
             attempts += 1
     return None, None
 
+
 def get_start_prices(symbols, broker_timezone, ist_timezone):
     start_prices = {}
     for sym in symbols:
@@ -54,10 +58,12 @@ def get_start_prices(symbols, broker_timezone, ist_timezone):
                 'date': result['date'],
                 'time': result['time']
             }
-            print(f"Symbol: {symbol}, Date: {result['date']}, Time: {time_str_ist}, Start Price: {result['start_price']}")
+            print(
+                f"Symbol: {symbol}, Date: {result['date']}, Time: {time_str_ist}, Start Price: {result['start_price']}")
         else:
             print(f"Could not get start price for {symbol}")
     return start_prices
+
 
 def get_start_price_for_symbol(symbol, broker_timezone, ist_timezone):
     # Ensure the symbol is selected
@@ -126,6 +132,7 @@ def get_start_price_for_symbol(symbol, broker_timezone, ist_timezone):
             print(f"No data available for {one_am_ist.strftime('%Y-%m-%d %H:%M:%S')} IST for {symbol}")
             return None
 
+
 def calculate_pip_difference(symbol, price1, price2):
     # Calculate the pip difference between two prices for a given symbol
     # Determine the pip size based on the symbol
@@ -141,14 +148,15 @@ def calculate_pip_difference(symbol, price1, price2):
     pip_difference = (price1 - price2) / pip_size  # Retain sign for direction
     return pip_difference
 
+
 def main():
     # Initialize MT5
     if not initialize_mt5():
         return
 
     # Define time zones
-    ist_timezone = pytz.timezone("Asia/Kolkata")     # IST timezone
-    broker_timezone = pytz.timezone('Etc/GMT-3')     # Broker's server time zone (UTC+3)
+    ist_timezone = pytz.timezone("Asia/Kolkata")  # IST timezone
+    broker_timezone = pytz.timezone('Etc/GMT-3')  # Broker's server time zone (UTC+3)
 
     # Define symbols list with 'close_trade_at' key
     symbols = [
@@ -205,7 +213,8 @@ def main():
                     thresholds_list = []
                     # Call the function
                     save_or_update_threshold_in_mongo(symbol, start_price, start_price, previous_threshold,
-                                                      pips_from_start, direction, thresholds_list, timestamp, start_price_time)
+                                                      pips_from_start, direction, thresholds_list, timestamp,
+                                                      start_price_time)
 
             for sym in symbols:
                 symbol = sym['symbol']
@@ -237,7 +246,8 @@ def main():
                             'direction': direction,
                             'thresholds_list': [latest_price]
                         }
-                        print(f"Symbol {symbol} has moved {direction} by {abs_pip_difference:.1f} pips from the start price. Threshold price: {latest_price}")
+                        print(
+                            f"Symbol {symbol} has moved {direction} by {abs_pip_difference:.1f} pips from the start price. Threshold price: {latest_price}")
                         # Place trade on first threshold
                         order_type = mt5.ORDER_TYPE_BUY if direction == 'up' else mt5.ORDER_TYPE_SELL
                         volume = 0.01  # Adjust volume as needed
@@ -256,14 +266,16 @@ def main():
                         start_price_time = start_price_info['time']
                         # Save to MongoDB
                         save_or_update_threshold_in_mongo(symbol, start_price, latest_price, previous_threshold,
-                                                          pips_from_start, direction, thresholds_list, timestamp, start_price_time)
+                                                          pips_from_start, direction, thresholds_list, timestamp,
+                                                          start_price_time)
                     else:
                         # Check for additional movement after first threshold
                         last_threshold_price = threshold_symbols[symbol]['threshold_price']
                         additional_pip_difference = calculate_pip_difference(symbol, latest_price, last_threshold_price)
                         abs_additional_pip_difference = abs(additional_pip_difference)
                         if abs_additional_pip_difference >= close_trade_at:
-                            print(f"Symbol {symbol} has moved an additional {abs_additional_pip_difference:.1f} pips {direction} from the threshold price. New threshold price: {latest_price}")
+                            print(
+                                f"Symbol {symbol} has moved an additional {abs_additional_pip_difference:.1f} pips {direction} from the threshold price. New threshold price: {latest_price}")
                             # Update the threshold price
                             threshold_symbols[symbol]['threshold_price'] = latest_price
                             threshold_symbols[symbol]['threshold_time'] = datetime.now()
@@ -279,9 +291,11 @@ def main():
                             start_price_time = start_price_info['time']
                             # Save to MongoDB
                             save_or_update_threshold_in_mongo(symbol, start_price, latest_price, previous_threshold,
-                                                              pips_from_start, direction, thresholds_list, timestamp, start_price_time)
+                                                              pips_from_start, direction, thresholds_list, timestamp,
+                                                              start_price_time)
                 else:
-                    print(f"Symbol {symbol}: Price has moved {abs_pip_difference:.1f} pips {direction} from start price, below threshold {pip_diff_threshold}")
+                    print(
+                        f"Symbol {symbol}: Price has moved {abs_pip_difference:.1f} pips {direction} from start price, below threshold {pip_diff_threshold}")
             # Sleep for a certain interval before checking again
             time.sleep(60)  # Check every 60 seconds
         except KeyboardInterrupt:
@@ -290,6 +304,7 @@ def main():
 
     # Shutdown the MT5 connection
     mt5.shutdown()
+
 
 if __name__ == "__main__":
     main()
