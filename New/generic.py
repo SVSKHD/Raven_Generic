@@ -24,5 +24,6 @@ def calculate_pip_difference(symbol, price1, price2):
     pip_difference = (price1 - price2) / pip_size
     return pip_difference
 
+print(load_symbols())
 
 

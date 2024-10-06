@@ -1,19 +1,25 @@
-# main.py
 import MetaTrader5 as mt5
 from datetime import datetime
 import pytz
 import time
 import json
+import os
 
 # Import functions from other modules
-from price_fetch import get_start_prices
+from price_fetch import get_start_price_for_symbol  # Updated to match your latest price_fetcher logic
 from utils import calculate_pip_difference
 from trade_managment import place_trade, close_trades_by_symbol
 from notifications import send_discord_message
 from db import save_or_update_threshold_in_mongo, save_threshold_symbols_to_db, load_threshold_symbols_from_db  # DB functions
 
+# Get the current directory where the script is running
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Create the full path to details.json
+details_path = os.path.join(current_dir, 'details.json')
+
 # Load details from details.json
-with open('./details.json') as f:
+with open(details_path) as f:
     config = json.load(f)
 
 symbols = config['symbols']
@@ -23,6 +29,26 @@ timeframe = mt5.TIMEFRAME_M5
 
 # Load the previous threshold symbols state from MongoDB to avoid placing trades again on script restart
 threshold_symbols = load_threshold_symbols_from_db()
+
+def get_start_prices(symbols, broker_timezone, ist_timezone):
+    """
+    Fetches start prices for all symbols using the updated price_fetcher logic.
+    """
+    start_prices = {}
+    for sym in symbols:
+        symbol = sym['symbol']
+        result = get_start_price_for_symbol(symbol, broker_timezone, ist_timezone)  # Updated to match the new logic
+        if result:
+            start_prices[symbol] = {
+                'start_price': result['start_price'],
+                'pip_difference': sym['pip_difference'],
+                'date': result['date'],
+                'time': result['time']
+            }
+            print(f"Symbol: {symbol}, Start Price: {result['start_price']}")
+        else:
+            print(f"Could not get start price for {symbol}")
+    return start_prices
 
 def main():
     # Initialize MT5
