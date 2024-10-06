@@ -4,38 +4,25 @@
       "symbol": "EURUSD",
       "pip_difference": 15,
       "close_trade_at": 10,
-      "close_trade_at_opposite_direction":5
+      "close_trade_at_opposite_direction":7
     },
     {
       "symbol": "GBPUSD",
       "pip_difference": 15,
       "close_trade_at": 5,
-       "close_trade_at_opposite_direction":5
+       "close_trade_at_opposite_direction":7
     },
     {
       "symbol": "USDJPY",
-      "pip_difference": 10,
-      "close_trade_at": 5
+      "pip_difference": 15,
+      "close_trade_at": 7,
+      "close_trade_at_opposite_direction":7
     },
     {
       "symbol": "EURJPY",
-      "pip_difference": 10,
-      "close_trade_at": 5
-    },
-    {
-      "symbol": "XAUUSD",
-      "pip_difference": 150,
-      "close_trade_at": 50
-    },
-    {
-      "symbol": "XAGUSD",
       "pip_difference": 15,
-      "close_trade_at": 5
-    },
-      {
-      "symbol": "BTCUSD",
-      "pip_difference": 15,
-      "close_trade_at": 5
+      "close_trade_at": 7,
+      "close_trade_at_opposite_direction":7
     }
   ],
   "timezone":"Asia/Kolkata",
