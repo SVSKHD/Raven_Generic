@@ -3,12 +3,14 @@
     {
       "symbol": "EURUSD",
       "pip_difference": 15,
-      "close_trade_at": 5
+      "close_trade_at": 10,
+      "close_trade_at_opposite_direction":5
     },
     {
       "symbol": "GBPUSD",
       "pip_difference": 15,
-      "close_trade_at": 5
+      "close_trade_at": 5,
+       "close_trade_at_opposite_direction":5
     },
     {
       "symbol": "USDJPY",
@@ -27,6 +29,11 @@
     },
     {
       "symbol": "XAGUSD",
+      "pip_difference": 15,
+      "close_trade_at": 5
+    },
+      {
+      "symbol": "BTCUSD",
       "pip_difference": 15,
       "close_trade_at": 5
     }

@@ -1,8 +1,8 @@
+
 from pymongo import MongoClient
 import pytz
-import pandas as pd
-from notifications import send_discord_message  # Ensure this function is correctly set up
 from datetime import datetime
+from notifications import send_discord_message
 
 # MongoDB setup
 MONGO_URI = 'mongodb+srv://hithesh:hithesh@utbiz.npdehas.mongodb.net/'
@@ -13,7 +13,7 @@ ist = pytz.timezone('Asia/Kolkata')
 # Function to save or update threshold data in MongoDB
 def save_or_update_threshold_in_mongo(symbol, start_price, current_price, previous_threshold, pips_from_start,
                                       direction, thresholds_list, timestamp, start_price_time):
-    collection_name = "pip_check2"
+    collection_name = "pip_check3"
     pip_check_collection = db[collection_name]
 
     # Ensure the timestamp and start_price_time are timezone-aware
@@ -63,24 +63,7 @@ def save_or_update_threshold_in_mongo(symbol, start_price, current_price, previo
         print(error_message)
         send_discord_message(error_message)
 
-# Function to check if data already exists in MongoDB
-def check_data_exists_in_mongo(symbol, date):
-    collection_name = "pip_check"
-    pip_check_collection = db[collection_name]
-
-    # Ensure the date is in string format 'YYYY-MM-DD'
-    date_str = date.strftime('%Y-%m-%d')
-
-    # Query MongoDB for the existing document
-    query = {"symbol": symbol, "date": date_str}
-
-    try:
-        return pip_check_collection.find_one(query)
-    except Exception as e:
-        print(f"Error while checking data existence for {symbol} on {date_str}: {str(e)}")
-        return None
-
-# NEW: Function to save threshold_symbols to MongoDB
+# Function to save threshold_symbols to MongoDB
 def save_threshold_symbols_to_db(threshold_symbols):
     collection_name = "threshold_symbols"
     collection = db[collection_name]
@@ -98,7 +81,7 @@ def save_threshold_symbols_to_db(threshold_symbols):
     if documents:
         collection.insert_many(documents)
 
-# NEW: Function to load threshold_symbols from MongoDB
+# Function to load threshold_symbols from MongoDB
 def load_threshold_symbols_from_db():
     collection_name = "threshold_symbols"
     collection = db[collection_name]
@@ -113,3 +96,5 @@ def load_threshold_symbols_from_db():
             data['threshold_time'] = datetime.fromisoformat(data['threshold_time'])
         threshold_symbols[symbol] = data
     return threshold_symbols
+
+
