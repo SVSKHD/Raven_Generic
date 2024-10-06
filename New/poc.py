@@ -146,7 +146,7 @@ def main():
                     print(f"Symbol {symbol}: Moved {pip_difference:.1f} pips {direction}, below threshold.")
 
             # Sleep for the next cycle
-            time.sleep(60)
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("Terminated by user.")
